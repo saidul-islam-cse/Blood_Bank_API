@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from .models import CustomUser
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth import authenticate
+
 class RegistrationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=100)
     email = serializers.EmailField()
@@ -18,3 +21,29 @@ class RegistrationSerializer(serializers.Serializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+    
+class LoginSerializers(TokenObtainPairSerializer):
+    username_field = CustomUser.EMAIL_FIELD
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+    
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+        
+        try:
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError({"email":"Mail Not found!"})
+        
+        user = authenticate(username=user.username, password=password)
+    
+        if not user:
+            raise serializers.ValidationError({"password":"Invalid credential"})
+        
+        data = super().get_token(user)
+        
+        return {
+            "access": str(data.access_token),
+            "refresh": str(data)
+        }
