@@ -21,3 +21,6 @@ class DonorProfile(models.Model):
     
     def __str__(self):
         return self.user.username
+    
+    class Meta:
+        verbose_name = 'DonorPorfile'
